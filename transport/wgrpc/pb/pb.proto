@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+service RCBService {
+    rpc Get (GetReq) returns (GetResp);
+    rpc Del (DelReq) returns (DelResp);
+    rpc Refresh (RefreshReq) returns (RefreshResp);
+}
+
+message GetReq {
+    string Space = 1;
+    string Key = 2;
+}
+message GetResp {
+    bytes Data = 1;
+}
+
+message DelReq {
+    string Space = 1;
+    string Key = 2;
+}
+message DelResp {
+}
+
+message RefreshReq {
+    string Space = 1;
+    string Key = 2;
+}
+message RefreshResp {
+}
