@@ -10,13 +10,16 @@ package wgrpc
 
 import (
     "context"
+    "github.com/zlyuancn/zcache_broker"
     "github.com/zlyuancn/zcache_broker/transport/wgrpc/pb"
+    "github.com/zlyuancn/zsingleflight"
     "google.golang.org/grpc"
 )
 
 type Client struct {
     conn *grpc.ClientConn
     c    pb.CBServiceClient
+    sf   *zsingleflight.SingleFlight // 单飞
 }
 
 func NewClient(conn *grpc.ClientConn) *Client {
@@ -24,6 +27,7 @@ func NewClient(conn *grpc.ClientConn) *Client {
     m := &Client{
         conn: conn,
         c:    c,
+        sf:   zsingleflight.New(),
     }
     return m
 }
@@ -33,19 +37,32 @@ func (m *Client) Close() {
 }
 
 func (m *Client) Get(ctx context.Context, space string, key string, opts ...grpc.CallOption) ([]byte, error) {
-    resp, err := m.c.Get(ctx, &pb.GetReq{Space: space, Key: key}, opts ...)
+    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+        resp, err := m.c.Get(ctx, &pb.GetReq{Space: space, Key: key}, opts ...)
+        if err != nil {
+            return nil, err
+        }
+        return resp.Data, nil
+    })
     if err != nil {
         return nil, err
     }
-    return resp.Data, nil
+
+    return v.([]byte), nil
 }
 
 func (m *Client) Del(ctx context.Context, space string, key string, opts ...grpc.CallOption) error {
-    _, err := m.c.Del(ctx, &pb.DelReq{Space: space, Key: key}, opts ...)
+    _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+        _, err := m.c.Del(ctx, &pb.DelReq{Space: space, Key: key}, opts ...)
+        return nil, err
+    })
     return err
 }
 
 func (m *Client) Refresh(ctx context.Context, space string, key string, opts ...grpc.CallOption) error {
-    _, err := m.c.Refresh(ctx, &pb.RefreshReq{Space: space, Key: key}, opts ...)
+    _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+        _, err := m.c.Refresh(ctx, &pb.RefreshReq{Space: space, Key: key}, opts ...)
+        return nil, err
+    })
     return err
 }

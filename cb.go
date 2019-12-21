@@ -68,7 +68,7 @@ func (m *CacheBroker) SetOptions(opts ...Option) {
 
 // 从缓存加载
 func (m *CacheBroker) get(space, key string) ([]byte, error) {
-    rkey := makeKey(space, key)
+    rkey := MakeKey(space, key)
     bs, err := m.c.Get(rkey)
     if err != nil {
         return nil, err
@@ -92,7 +92,7 @@ func (m *CacheBroker) loadDB(space, key string, fn LoadDBFn) ([]byte, error) {
         }
     }
 
-    rkey := makeKey(space, key)
+    rkey := MakeKey(space, key)
     // 从db加载
     bs, err := fn()
     if err != nil {
@@ -118,7 +118,7 @@ func (m *CacheBroker) Get(space, key string) ([]byte, error) {
 // 获取
 func (m *CacheBroker) GetWithFn(space, key string, fn LoadDBFn) ([]byte, error) {
     // 同时只能有一个goroutine在获取数据,其它goroutine直接等待结果
-    v, err := m.sf.Do(makeKey(space, key), func() (interface{}, error) {
+    v, err := m.sf.Do(MakeKey(space, key), func() (interface{}, error) {
         bs, err := m.get(space, key)
         if err != nil {
             return m.loadDB(space, key, fn)
@@ -134,23 +134,23 @@ func (m *CacheBroker) GetWithFn(space, key string, fn LoadDBFn) ([]byte, error) 
 
 // 从缓存中删除
 func (m *CacheBroker) Del(space, key string) error {
-    return m.c.Del(makeKey(space, key))
+    rkey := MakeKey(space, key)
+    _, err := m.sf.Do(rkey, func() (interface{}, error) {
+        return nil, m.c.Del(rkey)
+    })
+    return err
 }
 
 // 让一个key失效并立即从db中重新加载
 func (m *CacheBroker) Refresh(space, key string) error {
-    rkey := makeKey(space, key)
+    rkey := MakeKey(space, key)
     _, err := m.sf.Do(rkey, func() (interface{}, error) {
         return m.loadDB(space, key, nil)
     })
-    if err != nil {
-        return err
-    }
-
-    return nil
+    return err
 }
 
-func makeKey(space, key string) string {
+func MakeKey(space, key string) string {
     if space == "" {
         space = DefaultSpace
     }

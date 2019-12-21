@@ -13,14 +13,15 @@ import (
     "github.com/smallnest/rpcx/client"
     "github.com/smallnest/rpcx/protocol"
     "github.com/smallnest/rpcx/share"
+    "github.com/zlyuancn/zcache_broker"
     "github.com/zlyuancn/zcache_broker/transport/wrpcx/pb"
-    "google.golang.org/grpc"
+    "github.com/zlyuancn/zsingleflight"
     "time"
 )
 
 type Client struct {
-    conn *grpc.ClientConn
-    c    *client.XClientPool
+    c  *client.XClientPool
+    sf *zsingleflight.SingleFlight // 单飞
 }
 
 type ClientOption struct {
@@ -67,29 +68,43 @@ func NewClient(server_name string, opt ClientOption) *Client {
 
     c := client.NewXClientPool(opt.PoolSize, server_name, opt.FailMode, opt.SelectMode, d, option)
     m := &Client{
-        c: c,
+        c:  c,
+        sf: zsingleflight.New(),
     }
     return m
 }
 
 func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, error) {
-    resp := new(pb.GetResp)
-    err := m.c.Get().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
+    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+        resp := new(pb.GetResp)
+        err := m.c.Get().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
+        if err != nil {
+            return nil, err
+        }
+        return resp.Data, nil
+    })
     if err != nil {
         return nil, err
     }
-    return resp.Data, nil
+
+    return v.([]byte), nil
 }
 
 func (m *Client) Del(ctx context.Context, space string, key string) error {
-    resp := new(pb.DelResp)
-    err := m.c.Get().Call(ctx, "Del", &pb.DelReq{Space: space, Key: key}, resp)
+    _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+        resp := new(pb.DelResp)
+        err := m.c.Get().Call(ctx, "Del", &pb.DelReq{Space: space, Key: key}, resp)
+        return nil, err
+    })
     return err
 }
 
 func (m *Client) Refresh(ctx context.Context, space string, key string) error {
-    resp := new(pb.RefreshResp)
-    err := m.c.Get().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
+    _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+        resp := new(pb.RefreshResp)
+        err := m.c.Get().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
+        return nil, err
+    })
     return err
 }
 
