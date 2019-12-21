@@ -24,11 +24,11 @@ func getTestClient() *CacheBroker {
         DB:       0,
         PoolSize: 20,
     })
-    rcb, err := New(wredis.Wrap(c))
+    cb, err := New(wredis.Wrap(c))
     if err != nil {
         panic(err)
     }
-    return rcb
+    return cb
 }
 
 func TestGetAndCache(t *testing.T) {

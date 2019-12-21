@@ -6,7 +6,7 @@
 -------------------------------------------------
 */
 
-package wgrpc
+package wrpcx
 
 import (
     "bytes"
@@ -15,12 +15,10 @@ import (
     "github.com/go-redis/redis"
     "github.com/zlyuancn/zcache_broker"
     "github.com/zlyuancn/zcache_broker/cachedb/wredis"
-    "google.golang.org/grpc"
-    "net"
     "testing"
 )
 
-func getTestRCB() *zcache_broker.CacheBroker {
+func getTestClient() *zcache_broker.CacheBroker {
     c := redis.NewClient(&redis.Options{
         Addr:     "localhost:6379",
         Password: "",
@@ -28,11 +26,11 @@ func getTestRCB() *zcache_broker.CacheBroker {
         PoolSize: 20,
     })
 
-    rcb, err := zcache_broker.New(wredis.Wrap(c))
+    cb, err := zcache_broker.New(wredis.Wrap(c))
     if err != nil {
         panic(err)
     }
-    return rcb
+    return cb
 }
 
 func TestGet(t *testing.T) {
@@ -48,29 +46,24 @@ func TestGet(t *testing.T) {
         })
     }
 
-    // rcb
-    rcb := getTestRCB()
-    rcb.SetOptions(zcache_broker.WithSpaceConf(space, sc))
+    // cb
+    cb := getTestClient()
+    cb.SetOptions(zcache_broker.WithSpaceConf(space, sc))
 
+    server_name := "test"
     // server
-    l, err := net.Listen("tcp", ":2333")
-    if err != nil {
-        t.Fatal(err)
-    }
-    s := NewServer(rcb)
+    s := NewServer(server_name, cb)
     defer s.Close()
     go func() {
-        if err := s.Start(l); err != nil {
+        if err := s.Start(":2333"); err != nil {
             t.Fatal(err)
         }
     }()
 
     // client
-    conn, err := grpc.Dial("localhost:2333", grpc.WithInsecure())
-    if err != nil {
-        t.Fatal(err)
-    }
-    c := NewClient(conn)
+    copt := DefaultClientOption
+    copt.Address = []string{"localhost:2333"}
+    c := NewClient(server_name, copt)
     defer c.Close()
 
     // test

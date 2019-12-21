@@ -51,7 +51,7 @@ func NewServer(obj zcache_broker.PublicInterface) *Server {
         obj: obj,
         s:   s,
     }
-    pb.RegisterRCBServiceServer(s, m)
+    pb.RegisterCBServiceServer(s, m)
     return m
 }
 

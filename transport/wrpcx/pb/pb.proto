@@ -1,11 +1,5 @@
 syntax = "proto3";
 
-service CBService {
-    rpc Get (GetReq) returns (GetResp);
-    rpc Del (DelReq) returns (DelResp);
-    rpc Refresh (RefreshReq) returns (RefreshResp);
-}
-
 message GetReq {
     string Space = 1;
     string Key = 2;

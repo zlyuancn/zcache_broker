@@ -16,11 +16,11 @@ import (
 
 type Client struct {
     conn *grpc.ClientConn
-    c    pb.RCBServiceClient
+    c    pb.CBServiceClient
 }
 
 func NewClient(conn *grpc.ClientConn) *Client {
-    c := pb.NewRCBServiceClient(conn)
+    c := pb.NewCBServiceClient(conn)
     m := &Client{
         conn: conn,
         c:    c,
