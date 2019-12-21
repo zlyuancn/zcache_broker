@@ -34,36 +34,36 @@
 
 
 # 以下是性能测试数据
-##### 10000个key, 每个key512字节随机数据
+##### 10000个key, 每个key512字节随机数据, 请求key顺序随机
 
 +grpc
 ```
 2.50GHz * 16
-go test -v -bench . -cpu 10,20,50,100,500,1000,5000 .
 goos: linux
 goarch: amd64
 pkg: github.com/zlyuancn/zcache_broker/transport/wgrpc/test
-Benchmark_A-10        	   50000	     34931 ns/op
-Benchmark_A-20        	  100000	     19901 ns/op
-Benchmark_A-50        	  200000	      8156 ns/op
-Benchmark_A-100       	  500000	      3873 ns/op
-Benchmark_A-500       	 1000000	      1152 ns/op
-Benchmark_A-1000      	 1000000	      1328 ns/op
-Benchmark_A-5000      	 1000000	      1082 ns/op
+Benchmark_A-10          	   30000	     41881 ns/op
+Benchmark_A-20          	   50000	     28340 ns/op
+Benchmark_A-50          	   50000	     22747 ns/op
+Benchmark_A-100         	   50000	     24701 ns/op
+Benchmark_A-500         	  100000	     22383 ns/op
+Benchmark_A-1000        	   50000	     28987 ns/op
+Benchmark_A-5000        	   20000	     66445 ns/op
+Benchmark_A-10000       	   10000	    116241 ns/op
 ```
 
 +rpcx
 ```
 2.50GHz * 16
-go test -v -bench . -cpu 10,20,50,100,500,1000,5000 .
 goos: linux
 goarch: amd64
 pkg: github.com/zlyuancn/zcache_broker/transport/wrpcx/test
-Benchmark_A-10          	   50000	     26824 ns/op
-Benchmark_A-20          	  100000	     14344 ns/op
-Benchmark_A-50          	  200000	      6491 ns/op
-Benchmark_A-100         	  500000	      3131 ns/op
-Benchmark_A-500         	 1000000	      1113 ns/op
-Benchmark_A-1000        	 1000000	      1180 ns/op
-Benchmark_A-5000        	 2000000	       797 ns/op
+Benchmark_A-10          	   50000	     25867 ns/op
+Benchmark_A-20          	  100000	     16329 ns/op
+Benchmark_A-50          	  100000	     14274 ns/op
+Benchmark_A-100         	  100000	     14174 ns/op
+Benchmark_A-500         	  100000	     13985 ns/op
+Benchmark_A-1000        	  100000	     13205 ns/op
+Benchmark_A-5000        	  200000	      9668 ns/op
+Benchmark_A-10000       	  200000	      7338 ns/op
 ```
