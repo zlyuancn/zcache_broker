@@ -37,8 +37,8 @@ func TestGetAndCache(t *testing.T) {
     for i := 0; i < 10; i++ {
         k := fmt.Sprintf("k%d", i)
         v := []byte(fmt.Sprintf("v%d", i))
-        bs, err := c.GetWithFn(space, k, func() (bytes []byte, e error) {
-            return v, nil
+        bs, err := c.GetWithFn(space, k , func(space, key string) ([]byte, error) {
+            return []byte(fmt.Sprintf("v%d", i)), nil
         })
         if err != nil {
             t.Fatal(err)
@@ -64,7 +64,7 @@ func TestWithSpaceExpiration(t *testing.T) {
 
     k := "k0"
     v := []byte("v0")
-    bs, err := c.GetWithFn(space, k, func() (bytes []byte, e error) {
+    bs, err := c.GetWithFn(space, k, func(space, key string) ([]byte, error) {
         return v, nil
     })
     if err != nil {
@@ -76,7 +76,7 @@ func TestWithSpaceExpiration(t *testing.T) {
 
     time.Sleep(time.Millisecond * 200)
     v = []byte("vr")
-    bs, err = c.GetWithFn(space, k, func() (bytes []byte, e error) {
+    bs, err = c.GetWithFn(space, k, func(space, key string) ([]byte, error) {
         return v, nil
     })
     if err != nil {

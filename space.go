@@ -19,13 +19,11 @@ type SpaceConfig struct {
     auto_ref bool
     ex       time.Duration
     endex    time.Duration
-    fns      map[string]LoadDBFn
+    fn       LoadDBFn
 }
 
 func NewSpaceConfig() *SpaceConfig {
-    return &SpaceConfig{
-        fns: make(map[string]LoadDBFn),
-    }
+    return &SpaceConfig{}
 }
 
 // 设置过期时间
@@ -56,16 +54,8 @@ func (m *SpaceConfig) SetRandExpirat(start_ex time.Duration, end_ex time.Duratio
 }
 
 // 设置加载函数
-func (m *SpaceConfig) SetLoadDBFn(key string, fn LoadDBFn) *SpaceConfig {
-    m.fns[key] = fn
-    return m
-}
-
-// 设置一些加载函数
-func (m *SpaceConfig) SetLoadDBFns(mm map[string]LoadDBFn) *SpaceConfig {
-    for key, fn := range mm {
-        m.fns[key] = fn
-    }
+func (m *SpaceConfig) SetLoadDBFn(fn LoadDBFn) *SpaceConfig {
+    m.fn = fn
     return m
 }
 
@@ -78,9 +68,6 @@ func (m *SpaceConfig) expirat() time.Duration {
     return m.ex
 }
 
-func (m *SpaceConfig) getLoadDBFn(key string) LoadDBFn {
-    if fn, ok := m.fns[key]; ok {
-        return fn
-    }
-    return nil
+func (m *SpaceConfig) getLoadDBFn() LoadDBFn {
+    return m.fn
 }

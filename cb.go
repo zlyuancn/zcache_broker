@@ -21,7 +21,7 @@ const (
 
 var ErrLoadDBFnNotExists = errors.New("db加载函数不存在或为空")
 
-type LoadDBFn func() ([]byte, error)
+type LoadDBFn func(space, key string) ([]byte, error)
 
 type CacheDB interface {
     Del(key string) error
@@ -85,7 +85,7 @@ func (m *CacheBroker) get(space, key string) ([]byte, error) {
 func (m *CacheBroker) loadDB(space, key string, fn LoadDBFn) ([]byte, error) {
     if fn == nil {
         if sc, ok := m.spaces[space]; ok {
-            fn = sc.getLoadDBFn(key)
+            fn = sc.getLoadDBFn()
         }
         if fn == nil {
             return nil, ErrLoadDBFnNotExists
@@ -94,7 +94,7 @@ func (m *CacheBroker) loadDB(space, key string, fn LoadDBFn) ([]byte, error) {
 
     rkey := MakeKey(space, key)
     // 从db加载
-    bs, err := fn()
+    bs, err := fn(space, key)
     if err != nil {
         _ = m.c.Del(rkey) // 从db加载失败时从缓存删除
         return nil, err

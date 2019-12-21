@@ -38,13 +38,9 @@ func TestGet(t *testing.T) {
 
     // 空间配置
     sc := zcache_broker.NewSpaceConfig()
-    for i := 0; i < 10; i++ {
-        k := fmt.Sprintf("k%d", i)
-        v := []byte(fmt.Sprintf("v%d", i))
-        sc.SetLoadDBFn(k, func() (i []byte, e error) {
-            return v, nil
-        })
-    }
+    sc.SetLoadDBFn(func(space, key string) ([]byte, error) {
+        return []byte(key), nil
+    })
 
     // cb
     cb := getTestClient()
@@ -68,8 +64,8 @@ func TestGet(t *testing.T) {
 
     // test
     for i := 0; i < 10; i++ {
-        k := fmt.Sprintf("k%d", i)
-        v := []byte(fmt.Sprintf("v%d", i))
+        k := fmt.Sprintf("%d", i)
+        v := []byte(fmt.Sprintf("%d", i))
         bs, err := c.Get(context.Background(), space, k)
         if err != nil {
             t.Fatal(err)
