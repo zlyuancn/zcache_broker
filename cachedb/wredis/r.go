@@ -26,7 +26,11 @@ func (m *RedisWrap) Get(key string) ([]byte, error) {
 }
 
 func (m *RedisWrap) Del(key string) error {
-    return m.c.Del(key).Err()
+    err := m.c.Del(key).Err()
+    if err == redis.Nil {
+        return nil
+    }
+    return err
 }
 
 func (m *RedisWrap) Set(key string, value interface{}, ex time.Duration) error {
