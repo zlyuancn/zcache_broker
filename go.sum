@@ -365,8 +365,8 @@ github.com/xtaci/kcp-go v5.4.4+incompatible h1:QIJ0a0Q0N1G20yLHL2+fpdzyy2v/Cb3PI
 github.com/xtaci/kcp-go v5.4.4+incompatible/go.mod h1:bN6vIwHQbfHaHtFpEssmWsN45a+AZwO7eyRCmEIbtvE=
 github.com/xtaci/lossyconn v0.0.0-20190602105132-8df528c0c9ae h1:J0GxkO96kL4WF+AIT3M4mfUVinOCPgf2uUWYFUzN0sM=
 github.com/xtaci/lossyconn v0.0.0-20190602105132-8df528c0c9ae/go.mod h1:gXtu8J62kEgmN++bm9BVICuT/e8yiLI2KFobd/TRFsE=
-github.com/zlyuancn/zsingleflight v0.0.0-20191218030440-4f9d47f815a4 h1:G0uDJcnnPi3VHjt1Aa3Omk0A1meFfdrgGgF85jgQr6E=
-github.com/zlyuancn/zsingleflight v0.0.0-20191218030440-4f9d47f815a4/go.mod h1:HiLt5g70zl6WD2yUWhai7eIYOjvBG77IYP9d1QGcccE=
+github.com/zlyuancn/zsingleflight v0.0.0-20191222031535-43d1e1b431df h1:e1twofUCbZaW9qLX9HEGkNkMLn5tFcIh0T7eIPioMrs=
+github.com/zlyuancn/zsingleflight v0.0.0-20191222031535-43d1e1b431df/go.mod h1:HiLt5g70zl6WD2yUWhai7eIYOjvBG77IYP9d1QGcccE=
 go.etcd.io/bbolt v1.3.1-etcd.8 h1:6J7QAKqfFBGnU80KRnuQxfjjeE5xAGE/qB810I3FQHQ=
 go.etcd.io/bbolt v1.3.1-etcd.8/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/etcd v3.3.13+incompatible/go.mod h1:yaeTdrJi5lOmYerz05bd8+V7KubZs8YSFZfzsF9A6aI=

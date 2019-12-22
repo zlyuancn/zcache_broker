@@ -10,7 +10,7 @@ require (
 	github.com/onsi/ginkgo v1.10.3 // indirect
 	github.com/onsi/gomega v1.7.1 // indirect
 	github.com/smallnest/rpcx v0.0.0-20191221012701-b6e4dfac646d
-	github.com/zlyuancn/zsingleflight v0.0.0-20191218030440-4f9d47f815a4
+	github.com/zlyuancn/zsingleflight v0.0.0-20191222031535-43d1e1b431df
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f // indirect
