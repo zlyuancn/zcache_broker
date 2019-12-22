@@ -34,6 +34,40 @@
 
 
 # 以下是性能测试数据
+##### 10000个key, 每个key4字节随机数据, 请求key顺序随机
+
++grpc
+```
+2.50GHz * 16
+goos: linux
+goarch: amd64
+pkg: github.com/zlyuancn/zcache_broker/transport/wgrpc/test
+Benchmark_A-10          	   50000	     38315 ns/op
+Benchmark_A-20          	   50000	     24195 ns/op
+Benchmark_A-50          	  100000	     16894 ns/op
+Benchmark_A-100         	  100000	     16334 ns/op
+Benchmark_A-500         	  100000	     17170 ns/op
+Benchmark_A-1000        	   50000	     26191 ns/op
+Benchmark_A-5000        	   20000	     63499 ns/op
+Benchmark_A-10000       	   20000	     79446 ns/op
+```
+
++rpcx
+```
+2.50GHz * 16
+goos: linux
+goarch: amd64
+pkg: github.com/zlyuancn/zcache_broker/transport/wrpcx/test
+Benchmark_A-10          	  100000	     23409 ns/op
+Benchmark_A-20          	  100000	     13492 ns/op
+Benchmark_A-50          	  200000	     11469 ns/op
+Benchmark_A-100         	  200000	     11655 ns/op
+Benchmark_A-500         	  200000	     11215 ns/op
+Benchmark_A-1000        	  200000	     11038 ns/op
+Benchmark_A-5000        	  200000	      7741 ns/op
+Benchmark_A-10000       	  200000	      6156 ns/op
+```
+
 ##### 10000个key, 每个key512字节随机数据, 请求key顺序随机
 
 +grpc
