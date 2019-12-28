@@ -10,10 +10,12 @@ package wgrpc
 
 import (
     "context"
-    "github.com/zlyuancn/zcache_broker"
-    "github.com/zlyuancn/zcache_broker/transport/wgrpc/pb"
+
     "github.com/zlyuancn/zsingleflight"
     "google.golang.org/grpc"
+
+    "github.com/zlyuancn/zcache_broker"
+    "github.com/zlyuancn/zcache_broker/transport/wgrpc/pb"
 )
 
 type Client struct {
@@ -38,7 +40,7 @@ func (m *Client) Close() {
 
 func (m *Client) Get(ctx context.Context, space string, key string, opts ...grpc.CallOption) ([]byte, error) {
     v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
-        resp, err := m.c.Get(ctx, &pb.GetReq{Space: space, Key: key}, opts ...)
+        resp, err := m.c.Get(ctx, &pb.GetReq{Space: space, Key: key}, opts...)
         if err != nil {
             return nil, err
         }
@@ -51,9 +53,20 @@ func (m *Client) Get(ctx context.Context, space string, key string, opts ...grpc
     return v.([]byte), nil
 }
 
+func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, unmarshaler func(data []byte) (interface{}, error), opts ...grpc.CallOption) (interface{}, error) {
+    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+        resp, err := m.c.Get(ctx, &pb.GetReq{Space: space, Key: key}, opts...)
+        if err != nil {
+            return nil, err
+        }
+        return unmarshaler(resp.Data)
+    })
+    return v, err
+}
+
 func (m *Client) Del(ctx context.Context, space string, key string, opts ...grpc.CallOption) error {
     _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
-        _, err := m.c.Del(ctx, &pb.DelReq{Space: space, Key: key}, opts ...)
+        _, err := m.c.Del(ctx, &pb.DelReq{Space: space, Key: key}, opts...)
         return nil, err
     })
     return err
@@ -61,7 +74,7 @@ func (m *Client) Del(ctx context.Context, space string, key string, opts ...grpc
 
 func (m *Client) Refresh(ctx context.Context, space string, key string, opts ...grpc.CallOption) error {
     _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
-        _, err := m.c.Refresh(ctx, &pb.RefreshReq{Space: space, Key: key}, opts ...)
+        _, err := m.c.Refresh(ctx, &pb.RefreshReq{Space: space, Key: key}, opts...)
         return nil, err
     })
     return err

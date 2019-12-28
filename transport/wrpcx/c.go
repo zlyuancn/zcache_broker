@@ -10,13 +10,15 @@ package wrpcx
 
 import (
     "context"
+    "time"
+
     "github.com/smallnest/rpcx/client"
     "github.com/smallnest/rpcx/protocol"
     "github.com/smallnest/rpcx/share"
+    "github.com/zlyuancn/zsingleflight"
+
     "github.com/zlyuancn/zcache_broker"
     "github.com/zlyuancn/zcache_broker/transport/wrpcx/pb"
-    "github.com/zlyuancn/zsingleflight"
-    "time"
 )
 
 type Client struct {
@@ -88,6 +90,18 @@ func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, err
     }
 
     return v.([]byte), nil
+}
+
+func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, unmarshaler func(data []byte) (interface{}, error)) (interface{}, error) {
+    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+        resp := new(pb.GetResp)
+        err := m.c.Get().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
+        if err != nil {
+            return nil, err
+        }
+        return unmarshaler(resp.Data)
+    })
+    return v, err
 }
 
 func (m *Client) Del(ctx context.Context, space string, key string) error {
