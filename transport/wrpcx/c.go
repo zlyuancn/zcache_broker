@@ -22,8 +22,9 @@ import (
 )
 
 type Client struct {
-    c  *client.XClientPool
-    sf *zsingleflight.SingleFlight // 单飞
+    c        *client.XClientPool
+    sf       *zsingleflight.SingleFlight // 单飞
+    secretFn func() string               // 秘钥生成
 }
 
 type ClientOption struct {
@@ -34,6 +35,7 @@ type ClientOption struct {
     Retries        int               // 重试次数
     ConnectTimeout time.Duration     // 连接超时
     BackupLatency  time.Duration     // 故障转移模式等待时间
+    SecretFn       func() string     // 秘钥生成函数
 }
 
 var DefaultClientOption = ClientOption{
@@ -70,10 +72,19 @@ func NewClient(server_name string, opt ClientOption) *Client {
 
     c := client.NewXClientPool(opt.PoolSize, server_name, opt.FailMode, opt.SelectMode, d, option)
     m := &Client{
-        c:  c,
-        sf: zsingleflight.New(),
+        c:        c,
+        sf:       zsingleflight.New(),
+        secretFn: opt.SecretFn,
     }
     return m
+}
+
+func (m *Client) getClient() client.XClient {
+    c := m.c.Get()
+    if m.secretFn != nil {
+        c.Auth(m.secretFn())
+    }
+    return c
 }
 
 func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, error) {
@@ -95,7 +106,7 @@ func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, err
 func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, unmarshaler func(data []byte) (interface{}, error)) (interface{}, error) {
     v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
         resp := new(pb.GetResp)
-        err := m.c.Get().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
+        err := m.getClient().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
         if err != nil {
             return nil, err
         }
@@ -107,7 +118,7 @@ func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, 
 func (m *Client) Del(ctx context.Context, space string, key string) error {
     _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
         resp := new(pb.DelResp)
-        err := m.c.Get().Call(ctx, "Del", &pb.DelReq{Space: space, Key: key}, resp)
+        err := m.getClient().Call(ctx, "Del", &pb.DelReq{Space: space, Key: key}, resp)
         return nil, err
     })
     return err
@@ -116,7 +127,7 @@ func (m *Client) Del(ctx context.Context, space string, key string) error {
 func (m *Client) Refresh(ctx context.Context, space string, key string) error {
     _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
         resp := new(pb.RefreshResp)
-        err := m.c.Get().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
+        err := m.getClient().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
         return nil, err
     })
     return err

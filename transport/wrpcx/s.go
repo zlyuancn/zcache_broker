@@ -10,18 +10,15 @@ package wrpcx
 
 import (
     "context"
+    "net"
+
+    "github.com/smallnest/rpcx/protocol"
     "github.com/smallnest/rpcx/server"
+
     "github.com/zlyuancn/zcache_broker"
     "github.com/zlyuancn/zcache_broker/transport/wrpcx/pb"
-    "net"
 )
 
-type Server struct {
-    name string
-    o    *serverObj
-    s    *server.Server
-    done chan struct{}
-}
 type serverObj struct {
     obj zcache_broker.PublicInterface
 }
@@ -51,6 +48,13 @@ func (m *serverObj) Refresh(_ context.Context, req *pb.RefreshReq, resp *pb.Refr
     return nil
 }
 
+type Server struct {
+    name     string
+    authFunc func(ctx context.Context, req *protocol.Message, token string) error
+    o        *serverObj
+    s        *server.Server
+}
+
 func NewServer(server_name string, obj zcache_broker.PublicInterface) *Server {
     s := server.NewServer()
     o := &serverObj{obj: obj}
@@ -58,9 +62,12 @@ func NewServer(server_name string, obj zcache_broker.PublicInterface) *Server {
         name: server_name,
         s:    s,
         o:    o,
-        done: make(chan struct{}, 1),
     }
     return m
+}
+
+func (m *Server) SetAuthFunc(authFunc func(ctx context.Context, req *protocol.Message, token string) error) {
+    m.s.AuthFunc = authFunc
 }
 
 func (m *Server) Start(address string) error {
@@ -80,17 +87,12 @@ func (m *Server) serve(network, address string) error {
     }
 
     err := m.s.Serve(network, address)
-    select {
-    case <-m.done:
+    if err == server.ErrServerClosed {
         return nil
-    default:
-        return err
     }
+    return err
 }
 
-func (m *Server) Close() {
-    if len(m.done) == 0 {
-        m.done <- struct{}{}
-        _ = m.s.Close()
-    }
+func (m *Server) Close() error {
+    return m.s.Close()
 }
