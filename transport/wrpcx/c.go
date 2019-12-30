@@ -90,7 +90,7 @@ func (m *Client) getClient() client.XClient {
 func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, error) {
     v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
         resp := new(pb.GetResp)
-        err := m.c.Get().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
+        err := m.getClient().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
         if err != nil {
             return nil, err
         }
