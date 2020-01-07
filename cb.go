@@ -11,8 +11,9 @@ package zcache_broker
 import (
     "errors"
     "fmt"
-    "github.com/zlyuancn/zsingleflight"
     "time"
+
+    "github.com/zlyuancn/zsingleflight"
 )
 
 const (
@@ -75,7 +76,7 @@ func (m *CacheBroker) get(space, key string) ([]byte, error) {
     }
 
     // 刷新ttl
-    if sc, ok := m.spaces[space]; ok && sc.auto_ref {
+    if sc, ok := m.spaces[space]; ok && sc.prepare_auto_ref(key) {
         _ = m.c.SetTTL(rkey, sc.expirat())
     }
     return bs, nil
