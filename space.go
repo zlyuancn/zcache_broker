@@ -64,17 +64,19 @@ func (m *SpaceConfig) SetRandExpirat(start_ex time.Duration, end_ex time.Duratio
 }
 
 // 设置自动刷新, 它将在Get操作时自动刷新TTL
-func (m *SpaceConfig) SetAutoRefresh(auto_refresh bool) {
+func (m *SpaceConfig) SetAutoRefresh(auto_refresh bool) *SpaceConfig {
     m.auto_ref = auto_refresh
+    return m
 }
 
 // 设置自动刷新间隔, 它禁止高并发Get每次都触发自动刷新
-func (m *SpaceConfig) SetAutoRefreshInterval(stamp time.Duration) {
+func (m *SpaceConfig) SetAutoRefreshInterval(stamp time.Duration) *SpaceConfig {
     if stamp <= 0 {
         m.auto_ref_interval = DefaultAutoRefInterval
-        return
+        return m
     }
     m.auto_ref_interval = stamp
+    return m
 }
 
 // 设置加载函数
