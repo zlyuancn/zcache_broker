@@ -29,30 +29,13 @@
 
 # 连接器
 ##### 连接器用于提供给用户访问缓存服务的方式, 目前实现以下连接方式
-+ grpc
 + rpcx
 
 
 # 以下是性能测试数据
 ##### 10000个key, 每个key4字节随机数据, 请求key顺序随机
 
-+grpc
-```
-2.50GHz * 16
-goos: linux
-goarch: amd64
-pkg: github.com/zlyuancn/zcache_broker/transport/wgrpc/test
-Benchmark_A-10          	   50000	     38315 ns/op
-Benchmark_A-20          	   50000	     24195 ns/op
-Benchmark_A-50          	  100000	     16894 ns/op
-Benchmark_A-100         	  100000	     16334 ns/op
-Benchmark_A-500         	  100000	     17170 ns/op
-Benchmark_A-1000        	   50000	     26191 ns/op
-Benchmark_A-5000        	   20000	     63499 ns/op
-Benchmark_A-10000       	   20000	     79446 ns/op
-```
-
-+rpcx
++ rpcx
 ```
 2.50GHz * 16
 goos: linux
@@ -70,23 +53,7 @@ Benchmark_A-10000       	  200000	      6156 ns/op
 
 ##### 10000个key, 每个key512字节随机数据, 请求key顺序随机
 
-+grpc
-```
-2.50GHz * 16
-goos: linux
-goarch: amd64
-pkg: github.com/zlyuancn/zcache_broker/transport/wgrpc/test
-Benchmark_A-10          	   30000	     41881 ns/op
-Benchmark_A-20          	   50000	     28340 ns/op
-Benchmark_A-50          	   50000	     22747 ns/op
-Benchmark_A-100         	   50000	     24701 ns/op
-Benchmark_A-500         	  100000	     22383 ns/op
-Benchmark_A-1000        	   50000	     28987 ns/op
-Benchmark_A-5000        	   20000	     66445 ns/op
-Benchmark_A-10000       	   10000	    116241 ns/op
-```
-
-+rpcx
++ rpcx
 ```
 2.50GHz * 16
 goos: linux
