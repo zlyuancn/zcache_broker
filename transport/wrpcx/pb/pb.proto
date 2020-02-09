@@ -20,4 +20,5 @@ message RefreshReq {
     string Key = 2;
 }
 message RefreshResp {
+    bytes Data = 1;
 }

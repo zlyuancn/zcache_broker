@@ -21,6 +21,8 @@ import (
     "github.com/zlyuancn/zcache_broker/transport/wrpcx/pb"
 )
 
+type Unmarshaler func(data []byte) (interface{}, error)
+
 type Client struct {
     c        *client.XClientPool
     sf       *zsingleflight.SingleFlight // 单飞
@@ -103,7 +105,7 @@ func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, err
     return v.([]byte), nil
 }
 
-func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, unmarshaler func(data []byte) (interface{}, error)) (interface{}, error) {
+func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, unmarshaler Unmarshaler) (interface{}, error) {
     v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
         resp := new(pb.GetResp)
         err := m.getClient().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
@@ -124,13 +126,32 @@ func (m *Client) Del(ctx context.Context, space string, key string) error {
     return err
 }
 
-func (m *Client) Refresh(ctx context.Context, space string, key string) error {
-    _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+func (m *Client) Refresh(ctx context.Context, space string, key string) ([]byte, error) {
+    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
         resp := new(pb.RefreshResp)
         err := m.getClient().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
-        return nil, err
+        if err != nil {
+            return nil, err
+        }
+        return resp.Data, nil
     })
-    return err
+    if err != nil {
+        return nil, err
+    }
+
+    return v.([]byte), nil
+}
+
+func (m *Client) RefreshAndUnmarshal(ctx context.Context, space string, key string, unmarshaler Unmarshaler) (interface{}, error) {
+    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+        resp := new(pb.RefreshResp)
+        err := m.getClient().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
+        if err != nil {
+            return nil, err
+        }
+        return unmarshaler(resp.Data)
+    })
+    return v, err
 }
 
 func (m *Client) Close() {

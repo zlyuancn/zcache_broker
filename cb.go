@@ -37,7 +37,7 @@ type PublicInterface interface {
     // 从缓存中删除
     Del(space, key string) error
     // 让一个key失效并立即从db中重新加载
-    Refresh(space, key string) error
+    Refresh(space, key string) ([]byte, error)
 }
 
 type CacheBroker struct {
@@ -143,12 +143,15 @@ func (m *CacheBroker) Del(space, key string) error {
 }
 
 // 让一个key失效并立即从db中重新加载
-func (m *CacheBroker) Refresh(space, key string) error {
+func (m *CacheBroker) Refresh(space, key string) ([]byte, error) {
     rkey := MakeKey(space, key)
-    _, err := m.sf.Do(rkey, func() (interface{}, error) {
+    v, err := m.sf.Do(rkey, func() (interface{}, error) {
         return m.loadDB(space, key, nil)
     })
-    return err
+    if err != nil {
+        return nil, err
+    }
+    return v.([]byte), nil
 }
 
 func MakeKey(space, key string) string {

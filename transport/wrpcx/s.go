@@ -41,10 +41,11 @@ func (m *serverObj) Del(_ context.Context, req *pb.DelReq, resp *pb.DelResp) err
 }
 
 func (m *serverObj) Refresh(_ context.Context, req *pb.RefreshReq, resp *pb.RefreshResp) error {
-    err := m.obj.Refresh(req.Space, req.Key)
+    bs, err := m.obj.Refresh(req.Space, req.Key)
     if err != nil {
         return err
     }
+    resp.Data = bs
     return nil
 }
 
