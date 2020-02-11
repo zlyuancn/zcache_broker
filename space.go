@@ -69,7 +69,7 @@ func (m *SpaceConfig) SetAutoRefresh(auto_refresh bool) *SpaceConfig {
     return m
 }
 
-// 设置自动刷新间隔, 它禁止高并发Get每次都触发自动刷新
+// 设置自动刷新间隔, 它有效解决高并发Get每次都触发自动刷新
 func (m *SpaceConfig) SetAutoRefreshInterval(stamp time.Duration) *SpaceConfig {
     if stamp <= 0 {
         m.auto_ref_interval = DefaultAutoRefInterval
@@ -116,4 +116,24 @@ func (m *SpaceConfig) expirat() time.Duration {
 
 func (m *SpaceConfig) getLoadDBFn() LoadDBFn {
     return m.fn
+}
+
+type SpaceOption struct {
+    RandExpirat         bool          // 启用随机过期时间
+    Expirat             time.Duration // 过期时间(最小过期时间
+    EndExpirat          time.Duration // 最大过期时间
+    AutoRefresh         bool          // 自动刷新(仅开启了过期有效
+    AutoRefreshInterval time.Duration // 自动刷新间隔(仅开启了自动刷新有效
+}
+
+func MakeSpaceConfig(sc *SpaceOption) *SpaceConfig {
+    if sc.RandExpirat {
+        return NewSpaceConfig().
+            SetRandExpirat(sc.Expirat, sc.EndExpirat, sc.AutoRefresh).
+            SetAutoRefreshInterval(sc.AutoRefreshInterval)
+    }
+
+    return NewSpaceConfig().
+        SetExpirat(sc.Expirat, sc.AutoRefresh).
+        SetAutoRefreshInterval(sc.AutoRefreshInterval)
 }
