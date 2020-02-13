@@ -12,10 +12,12 @@ import (
     "bytes"
     "context"
     "fmt"
+    "testing"
+
     "github.com/go-redis/redis"
+
     "github.com/zlyuancn/zcache_broker"
     "github.com/zlyuancn/zcache_broker/cachedb/wredis"
-    "testing"
 )
 
 func getTestClient() *zcache_broker.CacheBroker {

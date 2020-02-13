@@ -13,6 +13,8 @@ import (
     "fmt"
     "time"
 
+    "github.com/zlyuancn/zerrors"
+    "github.com/zlyuancn/zlog2"
     "github.com/zlyuancn/zsingleflight"
 )
 
@@ -44,6 +46,7 @@ type CacheBroker struct {
     sf     *zsingleflight.SingleFlight // 单飞
     c      CacheDB                     // 客户端
     spaces map[string]*SpaceConfig     // 命名空间配置
+    log    Loger                       // 日志组件
 }
 
 func New(c CacheDB, opts ...Option) (*CacheBroker, error) {
@@ -51,6 +54,7 @@ func New(c CacheDB, opts ...Option) (*CacheBroker, error) {
         sf:     zsingleflight.New(),
         c:      c,
         spaces: make(map[string]*SpaceConfig),
+        log:    zlog2.DefaultLogger,
     }
 
     for _, o := range opts {
@@ -72,12 +76,14 @@ func (m *CacheBroker) get(space, key string) ([]byte, error) {
     rkey := MakeKey(space, key)
     bs, err := m.c.Get(rkey)
     if err != nil {
-        return nil, err
+        return nil, zerrors.WithMessage(err, "缓存加载失败")
     }
 
     // 刷新ttl
     if sc, ok := m.spaces[space]; ok && sc.prepare_auto_ref(key) {
-        _ = m.c.SetTTL(rkey, sc.expirat())
+        if err := m.c.SetTTL(rkey, sc.expirat()); err != nil {
+            m.log.Warn(zerrors.WithMessagef(err, "刷新ttl失败<%s>", rkey))
+        }
     }
     return bs, nil
 }
@@ -97,8 +103,10 @@ func (m *CacheBroker) loadDB(space, key string, fn LoadDBFn) ([]byte, error) {
     // 从db加载
     bs, err := fn(space, key)
     if err != nil {
-        _ = m.c.Del(rkey) // 从db加载失败时从缓存删除
-        return nil, err
+        if err := m.c.Del(rkey); err != nil { // 从db加载失败时从缓存删除
+            m.log.Warn(zerrors.WithMessagef(err, "db加载失败后删除缓存失败<%s>", rkey))
+        }
+        return nil, zerrors.WithMessage(err, "db加载失败")
     }
 
     // 缓存
@@ -106,8 +114,9 @@ func (m *CacheBroker) loadDB(space, key string, fn LoadDBFn) ([]byte, error) {
     if sc, ok := m.spaces[space]; ok {
         ex = sc.expirat()
     }
-    _ = m.c.Set(rkey, bs, ex) // 不管缓存是否成功
-
+    if err := m.c.Set(rkey, bs, ex); err != nil { // 不管缓存是否成功
+        m.log.Warn(zerrors.WithMessagef(err, "db加载后缓存失败<%s>", rkey))
+    }
     return bs, nil
 }
 
@@ -119,14 +128,21 @@ func (m *CacheBroker) Get(space, key string) ([]byte, error) {
 // 获取
 func (m *CacheBroker) GetWithFn(space, key string, fn LoadDBFn) ([]byte, error) {
     // 同时只能有一个goroutine在获取数据,其它goroutine直接等待结果
-    v, err := m.sf.Do(MakeKey(space, key), func() (interface{}, error) {
-        bs, err := m.get(space, key)
-        if err != nil {
-            return m.loadDB(space, key, fn)
+    rkey := MakeKey(space, key)
+    v, err := m.sf.Do(rkey, func() (interface{}, error) {
+        bs, gerr := m.get(space, key)
+        if gerr != nil {
+            bs, lerr := m.loadDB(space, key, fn)
+            if lerr != nil {
+                err := zerrors.WithMessagef(lerr, "%s", gerr)
+                return nil, err
+            }
+            return bs, nil
         }
         return bs, nil
     })
     if err != nil {
+        m.log.Warn(zerrors.WithMessagef(err, "加载失败<%s>", rkey))
         return nil, err
     }
 
@@ -139,7 +155,11 @@ func (m *CacheBroker) Del(space, key string) error {
     _, err := m.sf.Do(rkey, func() (interface{}, error) {
         return nil, m.c.Del(rkey)
     })
-    return err
+    if err != nil {
+        m.log.Warn(zerrors.WithMessagef(err, "删除失败<%s>", rkey))
+        return err
+    }
+    return nil
 }
 
 // 让一个key失效并立即从db中重新加载
@@ -149,6 +169,7 @@ func (m *CacheBroker) Refresh(space, key string) ([]byte, error) {
         return m.loadDB(space, key, nil)
     })
     if err != nil {
+        m.log.Warn(zerrors.WithMessagef(err, "刷新失败<%s>", rkey))
         return nil, err
     }
     return v.([]byte), nil
