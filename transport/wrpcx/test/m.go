@@ -10,12 +10,14 @@ package main
 
 import (
     "crypto/rand"
+    "log"
+    "math/big"
+
     "github.com/go-redis/redis"
+
     "github.com/zlyuancn/zcache_broker"
     "github.com/zlyuancn/zcache_broker/cachedb/wredis"
     "github.com/zlyuancn/zcache_broker/transport/wrpcx"
-    "log"
-    "math/big"
 )
 
 func getTestClient() *zcache_broker.CacheBroker {
@@ -38,7 +40,7 @@ func main() {
 
     // 空间配置
     sc := zcache_broker.NewSpaceConfig()
-    sc.SetLoadDBFn(func(space, key string) ([]byte, error) {
+    sc.SetLoadDBFn(func(space, key string, params ...string) ([]byte, error) {
         value := make([]byte, 512)
         sr := new(big.Int).SetInt64(256)
         for i := 0; i < len(value); i++ {

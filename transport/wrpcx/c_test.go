@@ -42,7 +42,7 @@ func TestGet(t *testing.T) {
 
     // 空间配置
     sc := zcache_broker.NewSpaceConfig()
-    sc.SetLoadDBFn(func(space, key string) ([]byte, error) {
+    sc.SetLoadDBFn(func(space, key string, params ...string) ([]byte, error) {
         return []byte(key), nil
     })
 
@@ -71,6 +71,49 @@ func TestGet(t *testing.T) {
         k := fmt.Sprintf("%d", i)
         v := []byte(fmt.Sprintf("%d", i))
         bs, err := c.Get(context.Background(), space, k)
+        if err != nil {
+            t.Fatal(err)
+        }
+        if !bytes.Equal(bs, v) {
+            t.Fatalf("收到的值非预期 %s: %s", k, string(bs))
+        }
+    }
+}
+
+func TestGetWithParams(t *testing.T) {
+    space := "test"
+
+    // 空间配置
+    sc := zcache_broker.NewSpaceConfig()
+    sc.SetLoadDBFn(func(space, key string, params ...string) ([]byte, error) {
+        return []byte(params[0]), nil
+    })
+
+    // cb
+    cb := getTestClient()
+    cb.SetOptions(zcache_broker.WithSpaceConf(space, sc))
+
+    server_name := "test"
+    // server
+    s := NewServer(server_name, cb)
+    defer s.Close()
+    go func() {
+        if err := s.Start(":2333"); err != nil {
+            t.Fatal(err)
+        }
+    }()
+
+    // client
+    copt := DefaultClientOption
+    copt.Address = []string{"localhost:2333"}
+    c := NewClient(server_name, copt)
+    defer c.Close()
+
+    // test
+    for i := 0; i < 10; i++ {
+        k := fmt.Sprintf("%d", i)
+        v := []byte(fmt.Sprintf("%d", i))
+        bs, err := c.Get(context.Background(), space, "key", k)
         if err != nil {
             t.Fatal(err)
         }

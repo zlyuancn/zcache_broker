@@ -3,6 +3,7 @@ syntax = "proto3";
 message GetReq {
     string Space = 1;
     string Key = 2;
+    repeated string params = 3;
 }
 message GetResp {
     bytes Data = 1;
@@ -11,6 +12,7 @@ message GetResp {
 message DelReq {
     string Space = 1;
     string Key = 2;
+    repeated string params = 3;
 }
 message DelResp {
 }
@@ -18,6 +20,7 @@ message DelResp {
 message RefreshReq {
     string Space = 1;
     string Key = 2;
+    repeated string params = 3;
 }
 message RefreshResp {
     bytes Data = 1;

@@ -37,12 +37,14 @@ func getTestClient() *CacheBroker {
 func TestGetAndCache(t *testing.T) {
     space := "test"
     c := getTestClient()
+    c.SetOptions(WithSpaceConf("test", NewSpaceConfig().SetLoadDBFn(func(space, key string, params ...string) (i []byte, err error) {
+        return []byte(fmt.Sprintf("v%s", key)), nil
+    })))
+
     for i := 0; i < 10; i++ {
-        k := fmt.Sprintf("k%d", i)
+        k := fmt.Sprintf("%d", i)
         v := []byte(fmt.Sprintf("v%d", i))
-        bs, err := c.GetWithFn(space, k, func(space, key string) ([]byte, error) {
-            return []byte(fmt.Sprintf("v%d", i)), nil
-        })
+        bs, err := c.Get(space, k)
         if err != nil {
             t.Fatal(err)
         }
@@ -60,32 +62,61 @@ func TestGetAndCache(t *testing.T) {
 func TestWithSpaceExpiration(t *testing.T) {
     c := getTestClient()
     space := "test"
-    c.SetOptions(WithSpaceConf(
-        space,
-        NewSpaceConfig().SetExpirat(time.Millisecond*100, true),
-    ))
+    sconfig := NewSpaceConfig().SetExpirat(time.Millisecond*100, true)
+    c.SetOptions(WithSpaceConf(space, sconfig))
 
     k := "k0"
-    v := []byte("v0")
-    bs, err := c.GetWithFn(space, k, func(space, key string) ([]byte, error) {
-        return v, nil
+    v1 := []byte("v0")
+
+    sconfig.SetLoadDBFn(func(space, key string, params ...string) (i []byte, err error) {
+        return v1, nil
     })
+    bs, err := c.Get(space, k)
     if err != nil {
         t.Fatal(err)
     }
-    if !bytes.Equal(bs, v) {
+    if !bytes.Equal(bs, v1) {
         t.Fatalf("收到的值非预期 %s: %s", k, string(bs))
     }
 
     time.Sleep(time.Millisecond * 200)
-    v = []byte("vr")
-    bs, err = c.GetWithFn(space, k, func(space, key string) ([]byte, error) {
-        return v, nil
+    v2 := []byte("vr")
+    sconfig.SetLoadDBFn(func(space, key string, params ...string) (i []byte, err error) {
+        return v2, nil
     })
+    bs, err = c.Get(space, k)
     if err != nil {
         t.Fatal(err)
     }
-    if !bytes.Equal(bs, v) {
+    if !bytes.Equal(bs, v2) {
         t.Fatalf("收到的值非预期 %s: %s", k, string(bs))
     }
+}
+
+func TestGetWithParams(t *testing.T) {
+    space := "test"
+    c := getTestClient()
+    c.SetOptions(WithSpaceConf("test", NewSpaceConfig().SetLoadDBFn(func(space, key string, params ...string) (i []byte, err error) {
+        if params[0] == "a" {
+            return []byte("a"), nil
+        }
+        return []byte("b"), nil
+    })))
+
+    bs, err := c.Get(space, "key", "a")
+    if err != nil {
+        t.Fatal(err)
+    }
+    if !bytes.Equal(bs, []byte("a")) {
+        t.Fatalf("收到的值非预期 %s", string(bs))
+    }
+
+    bs, err = c.Get(space, "key", "b")
+    if err != nil {
+        t.Fatal(err)
+    }
+    if !bytes.Equal(bs, []byte("b")) {
+        t.Fatalf("收到的值非预期 %s", string(bs))
+    }
+
 }

@@ -11,6 +11,7 @@ package wrpcx
 import (
     "context"
     "fmt"
+    "strings"
     "time"
 
     "github.com/smallnest/rpcx/client"
@@ -89,10 +90,10 @@ func (m *Client) getClient() client.XClient {
     return c
 }
 
-func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, error) {
-    v, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
+func (m *Client) Get(ctx context.Context, space string, key string, params ...string) ([]byte, error) {
+    v, err := m.sf.Do(makeSFKey(space, key, params...), func() (interface{}, error) {
         resp := new(pb.GetResp)
-        err := m.getClient().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
+        err := m.getClient().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key, Params: params}, resp)
         if err != nil {
             return nil, err
         }
@@ -105,10 +106,10 @@ func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, err
     return v.([]byte), nil
 }
 
-func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, unmarshaler Unmarshaler) (interface{}, error) {
-    v, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
+func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, unmarshaler Unmarshaler, params ...string) (interface{}, error) {
+    v, err := m.sf.Do(makeSFKey(space, key, params...), func() (interface{}, error) {
         resp := new(pb.GetResp)
-        err := m.getClient().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
+        err := m.getClient().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key, Params: params}, resp)
         if err != nil {
             return nil, err
         }
@@ -117,19 +118,19 @@ func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, 
     return v, err
 }
 
-func (m *Client) Del(ctx context.Context, space string, key string) error {
-    _, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
+func (m *Client) Del(ctx context.Context, space string, key string, params ...string) error {
+    _, err := m.sf.Do(makeSFKey(space, key, params...), func() (interface{}, error) {
         resp := new(pb.DelResp)
-        err := m.getClient().Call(ctx, "Del", &pb.DelReq{Space: space, Key: key}, resp)
+        err := m.getClient().Call(ctx, "Del", &pb.DelReq{Space: space, Key: key, Params: params}, resp)
         return nil, err
     })
     return err
 }
 
-func (m *Client) Refresh(ctx context.Context, space string, key string) ([]byte, error) {
-    v, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
+func (m *Client) Refresh(ctx context.Context, space string, key string, params ...string) ([]byte, error) {
+    v, err := m.sf.Do(makeSFKey(space, key, params...), func() (interface{}, error) {
         resp := new(pb.RefreshResp)
-        err := m.getClient().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
+        err := m.getClient().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key, Params: params}, resp)
         if err != nil {
             return nil, err
         }
@@ -142,10 +143,10 @@ func (m *Client) Refresh(ctx context.Context, space string, key string) ([]byte,
     return v.([]byte), nil
 }
 
-func (m *Client) RefreshAndUnmarshal(ctx context.Context, space string, key string, unmarshaler Unmarshaler) (interface{}, error) {
-    v, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
+func (m *Client) RefreshAndUnmarshal(ctx context.Context, space string, key string, unmarshaler Unmarshaler, params ...string) (interface{}, error) {
+    v, err := m.sf.Do(makeSFKey(space, key, params...), func() (interface{}, error) {
         resp := new(pb.RefreshResp)
-        err := m.getClient().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
+        err := m.getClient().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key, Params: params}, resp)
         if err != nil {
             return nil, err
         }
@@ -158,6 +159,9 @@ func (m *Client) Close() {
     m.c.Close()
 }
 
-func makeSFKey(space, key string) string {
+func makeSFKey(space, key string, params ...string) string {
+    if len(params) != 0 {
+        return fmt.Sprintf("%s:%s?%s", space, key, strings.Join(params, "&"))
+    }
     return fmt.Sprintf("%s:%s", space, key)
 }

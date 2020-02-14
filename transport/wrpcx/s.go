@@ -24,7 +24,7 @@ type serverObj struct {
 }
 
 func (m *serverObj) Get(_ context.Context, req *pb.GetReq, resp *pb.GetResp) error {
-    bs, err := m.obj.Get(req.Space, req.Key)
+    bs, err := m.obj.Get(req.Space, req.Key, req.Params...)
     if err != nil {
         return err
     }
@@ -33,7 +33,7 @@ func (m *serverObj) Get(_ context.Context, req *pb.GetReq, resp *pb.GetResp) err
 }
 
 func (m *serverObj) Del(_ context.Context, req *pb.DelReq, resp *pb.DelResp) error {
-    err := m.obj.Del(req.Space, req.Key)
+    err := m.obj.Del(req.Space, req.Key, req.Params...)
     if err != nil {
         return err
     }
@@ -41,7 +41,7 @@ func (m *serverObj) Del(_ context.Context, req *pb.DelReq, resp *pb.DelResp) err
 }
 
 func (m *serverObj) Refresh(_ context.Context, req *pb.RefreshReq, resp *pb.RefreshResp) error {
-    bs, err := m.obj.Refresh(req.Space, req.Key)
+    bs, err := m.obj.Refresh(req.Space, req.Key, req.Params...)
     if err != nil {
         return err
     }
