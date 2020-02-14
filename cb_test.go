@@ -11,18 +11,21 @@ package zcache_broker
 import (
     "bytes"
     "fmt"
-    "github.com/go-redis/redis"
-    "github.com/zlyuancn/zcache_broker/cachedb/wredis"
     "testing"
     "time"
+
+    "github.com/go-redis/redis"
+
+    "github.com/zlyuancn/zcache_broker/cachedb/wredis"
 )
 
 func getTestClient() *CacheBroker {
     c := redis.NewClient(&redis.Options{
-        Addr:     "localhost:6379",
-        Password: "",
-        DB:       0,
-        PoolSize: 20,
+        Addr:        "localhost:6379",
+        Password:    "",
+        DB:          0,
+        PoolSize:    1,
+        DialTimeout: time.Second * 3,
     })
     cb, err := New(wredis.Wrap(c))
     if err != nil {
@@ -37,7 +40,7 @@ func TestGetAndCache(t *testing.T) {
     for i := 0; i < 10; i++ {
         k := fmt.Sprintf("k%d", i)
         v := []byte(fmt.Sprintf("v%d", i))
-        bs, err := c.GetWithFn(space, k , func(space, key string) ([]byte, error) {
+        bs, err := c.GetWithFn(space, k, func(space, key string) ([]byte, error) {
             return []byte(fmt.Sprintf("v%d", i)), nil
         })
         if err != nil {

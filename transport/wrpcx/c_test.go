@@ -13,6 +13,7 @@ import (
     "context"
     "fmt"
     "testing"
+    "time"
 
     "github.com/go-redis/redis"
 
@@ -22,10 +23,11 @@ import (
 
 func getTestClient() *zcache_broker.CacheBroker {
     c := redis.NewClient(&redis.Options{
-        Addr:     "localhost:6379",
-        Password: "",
-        DB:       0,
-        PoolSize: 20,
+        Addr:        "localhost:6379",
+        Password:    "",
+        DB:          0,
+        PoolSize:    1,
+        DialTimeout: time.Second * 3,
     })
 
     cb, err := zcache_broker.New(wredis.Wrap(c))

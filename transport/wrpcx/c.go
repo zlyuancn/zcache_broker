@@ -10,6 +10,7 @@ package wrpcx
 
 import (
     "context"
+    "fmt"
     "time"
 
     "github.com/smallnest/rpcx/client"
@@ -17,7 +18,6 @@ import (
     "github.com/smallnest/rpcx/share"
     "github.com/zlyuancn/zsingleflight"
 
-    "github.com/zlyuancn/zcache_broker"
     "github.com/zlyuancn/zcache_broker/transport/wrpcx/pb"
 )
 
@@ -90,7 +90,7 @@ func (m *Client) getClient() client.XClient {
 }
 
 func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, error) {
-    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+    v, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
         resp := new(pb.GetResp)
         err := m.getClient().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
         if err != nil {
@@ -106,7 +106,7 @@ func (m *Client) Get(ctx context.Context, space string, key string) ([]byte, err
 }
 
 func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, unmarshaler Unmarshaler) (interface{}, error) {
-    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+    v, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
         resp := new(pb.GetResp)
         err := m.getClient().Call(ctx, "Get", &pb.GetReq{Space: space, Key: key}, resp)
         if err != nil {
@@ -118,7 +118,7 @@ func (m *Client) GetAndUnmarshal(ctx context.Context, space string, key string, 
 }
 
 func (m *Client) Del(ctx context.Context, space string, key string) error {
-    _, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+    _, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
         resp := new(pb.DelResp)
         err := m.getClient().Call(ctx, "Del", &pb.DelReq{Space: space, Key: key}, resp)
         return nil, err
@@ -127,7 +127,7 @@ func (m *Client) Del(ctx context.Context, space string, key string) error {
 }
 
 func (m *Client) Refresh(ctx context.Context, space string, key string) ([]byte, error) {
-    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+    v, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
         resp := new(pb.RefreshResp)
         err := m.getClient().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
         if err != nil {
@@ -143,7 +143,7 @@ func (m *Client) Refresh(ctx context.Context, space string, key string) ([]byte,
 }
 
 func (m *Client) RefreshAndUnmarshal(ctx context.Context, space string, key string, unmarshaler Unmarshaler) (interface{}, error) {
-    v, err := m.sf.Do(zcache_broker.MakeKey(space, key), func() (interface{}, error) {
+    v, err := m.sf.Do(makeSFKey(space, key), func() (interface{}, error) {
         resp := new(pb.RefreshResp)
         err := m.getClient().Call(ctx, "Refresh", &pb.RefreshReq{Space: space, Key: key}, resp)
         if err != nil {
@@ -156,4 +156,8 @@ func (m *Client) RefreshAndUnmarshal(ctx context.Context, space string, key stri
 
 func (m *Client) Close() {
     m.c.Close()
+}
+
+func makeSFKey(space, key string) string {
+    return fmt.Sprintf("%s:%s", space, key)
 }
