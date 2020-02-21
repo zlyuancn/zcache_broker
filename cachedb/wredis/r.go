@@ -16,6 +16,8 @@ import (
     "github.com/zlyuancn/zcache_broker"
 )
 
+var _ zcache_broker.CacheDB = (*RedisWrap)(nil)
+
 type RedisWrap struct {
     c redis.UniversalClient
 }
