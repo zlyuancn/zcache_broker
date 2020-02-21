@@ -21,12 +21,14 @@ import (
     "github.com/zlyuancn/zsingleflight"
 )
 
+var ErrNoEntry = errors.New("条目不存在")
 var ErrLoadDBFnNotExists = errors.New("db加载函数不存在或为空")
 
 type LoadDBFn func(space, key string, params ...string) ([]byte, error)
 
 type CacheDB interface {
     Del(key string) error
+    // 获取一个值, 如果这个key在缓存中不存在应该返回 ErrNoEntry 错误
     Get(key string) ([]byte, error)
     Set(key string, value interface{}, ex time.Duration) error
     SetTTL(key string, ex time.Duration) error
@@ -75,6 +77,9 @@ func (m *CacheBroker) get(space, key string, params ...string) ([]byte, error) {
     ckey := makeCacheKey(space, key, params...)
     bs, err := m.c.Get(ckey)
     if err != nil {
+        if err == ErrNoEntry {
+            return nil, err
+        }
         return nil, zerrors.WithMessage(err, "缓存加载失败")
     }
 
@@ -127,14 +132,19 @@ func (m *CacheBroker) Get(space, key string, params ...string) ([]byte, error) {
     sfkey := makeSFKey(space, key, params...)
     v, err := m.sf.Do(sfkey, func() (interface{}, error) {
         bs, gerr := m.get(space, key, params...)
-        if gerr != nil {
-            bs, lerr := m.loadDB(space, key, params...)
-            if lerr != nil {
-                return nil, zerrors.WithMessage(lerr, gerr.Error())
-            }
+        if gerr == nil {
             return bs, nil
         }
-        return bs, nil
+
+        bs, lerr := m.loadDB(space, key, params...)
+        if lerr == nil {
+            return bs, nil
+        }
+
+        if gerr == ErrNoEntry {
+            return nil, lerr
+        }
+        return nil, zerrors.WithMessage(gerr, lerr.Error())
     })
     if err != nil {
         m.log.Warn(zerrors.WithMessagef(err, "加载失败<%s>", sfkey))

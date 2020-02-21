@@ -9,8 +9,11 @@
 package wredis
 
 import (
-    "github.com/go-redis/redis"
     "time"
+
+    "github.com/go-redis/redis"
+
+    "github.com/zlyuancn/zcache_broker"
 )
 
 type RedisWrap struct {
@@ -22,7 +25,11 @@ func Wrap(c redis.UniversalClient) *RedisWrap {
 }
 
 func (m *RedisWrap) Get(key string) ([]byte, error) {
-    return m.c.Get(key).Bytes()
+    bs, err := m.c.Get(key).Bytes()
+    if err == redis.Nil {
+        return nil, zcache_broker.ErrNoEntry
+    }
+    return bs, err
 }
 
 func (m *RedisWrap) Del(key string) error {
